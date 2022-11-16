@@ -66,7 +66,7 @@ static void *consumer(void *arg2)
    return NULL;
 }
 
-void main (void)
+/*void main (void)
 {
    pthread_t prodtid;
    pthread_t constid;
@@ -92,4 +92,4 @@ void main (void)
 
    pthread_mutex_destroy(&mxShared);
    return 0;
-}
+}*/
