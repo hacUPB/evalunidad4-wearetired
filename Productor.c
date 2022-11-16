@@ -2,26 +2,27 @@
 #include <string.h> 
 #include <errno.h> 
 #include <pthread.h> 
-#include <semaphore.h>
+//#include <semaphore.h>
 
 #define SUMSIZE 100 
 #define BUFSIZE 8
 
 int sum = 0; 
-sem_t items; 
-sem_t slots;
+int cont= 0;
+int conCedula = 123497824;
+pthread_mutex_t mxShared;
+/*sem_t items; 
+sem_t slots;*/
 
-void put_item(int); 
-void get_item(int *);
-
-typedef struct 
+typedef struct Gobierno
 {
-   int edad;
-   char sexo;
    double ingresoM;
    int cedula;
-
 }Pers;
+
+void put_item(Pers); 
+void get_item(Pers *);
+
 
 
 static void *producer(void *arg1)
@@ -30,23 +31,37 @@ static void *producer(void *arg1)
 
    for (i = 1; i <= SUMSIZE; i++)
    {
-      sem_wait (&slots);
-      put_item(i*i);
-      sem_post(&items);
+      pthread_mutex_lock(&mxShared);
+      Pers persona;
+      conCedula = conCedula+100;
+      persona.cedula = conCedula;
+      int ingresoM=rand()%10000;
+      persona.ingresoM = ingresoM;
+      put_item(persona);
+      
+      pthread_mutex_unlock(&mxShared);
    }
    return NULL;
 }
 
 static void *consumer(void *arg2)
 {
-   int i, myitem;
+   int i; 
+   Pers myitem;
 
    for (i = 1; i <= SUMSIZE; i++)
    {
-      sem_wait(&items);
       get_item(&myitem);
-      sem_post (&slots);
-      sum += myitem;
+      if (myitem.ingresoM > 2500)
+      {
+         printf("Usuario con cédula: %d\n",myitem.cedula);
+         printf("Tiene un ingreso de: %d y pertenece al rango 2 \n",myitem.ingresoM);
+      }
+      else if (myitem.ingresoM < 2500)
+      {
+         printf("Usuario con cédula: %d\n",myitem.cedula);
+         printf("Tiene un ingreso de: %d y pertenece al rango 1 y morirá \n",myitem.ingresoM);
+      }
    }
    return NULL;
 }
@@ -57,13 +72,15 @@ void main (void)
    pthread_t constid;
    int i, total;
 
+   printf("Se segmenta el usuario: %f\n", cont);
+
    total = 0;
    for (i = 1; i <= SUMSIZE; i++)
    total += i*i;
    printf("The checksum is %f\n", total);
 
-   sem_init(&items, 0, 0);
-   sem_init(&slots, 0, BUFSIZE);
+   //sem_init(&items, 0, 0);
+   //sem_init(&slots, 0, BUFSIZE);
 
    pthread_create(&prodtid, NULL, producer, NULL);
    pthread_create(&constid, NULL, consumer, NULL);
@@ -72,5 +89,7 @@ void main (void)
    pthread_join(constid, NULL);
 
    printf("The threads produced the sum %d\n", sum);
-}
 
+   pthread_mutex_destroy(&mxShared);
+   return 0;
+}
